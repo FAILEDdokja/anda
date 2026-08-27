@@ -1,0 +1,15 @@
+# dependencies / build artifacts
+node_modules/
+dist/
+.npm/
+
+# local environment (never commit client secrets — PRD §21)
+.env
+.env.local
+.env.*.local
+supabase/.temp/
+web/anda-preview.png
+
+# logs / OS
+*.log
+.DS_Store
