@@ -12,13 +12,16 @@ interface Props {
 
 export function PurchaseEntry({ store, onBack }: Props) {
   const [qty, setQty] = useState(12);
-  const [cost, setCost] = useState('');
+  const [priceMode, setPriceMode] = useState<'total' | 'perEgg'>('total');
+  const [totalCost, setTotalCost] = useState('');
+  const [pricePerEgg, setPricePerEgg] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState(false);
 
   const submit = async () => {
-    const c = parseFloat(cost);
+    const enteredPrice = parseFloat(priceMode === 'total' ? totalCost : pricePerEgg);
+    const c = priceMode === 'total' ? enteredPrice : enteredPrice * qty;
     if (busy || qty < 1 || Number.isNaN(c) || c < 0) return;
     setBusy(true);
     setError(null);
@@ -43,8 +46,10 @@ export function PurchaseEntry({ store, onBack }: Props) {
     );
   }
 
-  const perEgg = qty > 0 && !Number.isNaN(parseFloat(cost)) && parseFloat(cost) >= 0
-    ? (parseFloat(cost) / qty).toFixed(2)
+  const enteredPrice = parseFloat(priceMode === 'total' ? totalCost : pricePerEgg);
+  const total = priceMode === 'total' ? enteredPrice : enteredPrice * qty;
+  const perEgg = qty > 0 && !Number.isNaN(total) && total >= 0
+    ? (total / qty).toFixed(2)
     : null;
 
   return (
@@ -65,20 +70,48 @@ export function PurchaseEntry({ store, onBack }: Props) {
       <div style={s.card}>
         <label style={{ display: 'block', fontSize: 14, fontWeight: 600, marginBottom: 6 }}>Quantity</label>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, justifyContent: 'center', marginBottom: 16 }}>
-          <button onClick={() => setQty(Math.max(1, qty - 6))} style={stepperBtn} disabled={busy}>−</button>
-          <span style={{ fontSize: 32, fontWeight: 700, minWidth: 50, textAlign: 'center' }}>{qty}</span>
-          <button onClick={() => setQty(qty + 6)} style={stepperBtn} disabled={busy}>+</button>
+          <button onClick={() => setQty(Math.max(1, qty - 1))} style={stepperBtn} disabled={busy}>−</button>
+          <input
+            type="number"
+            inputMode="numeric"
+            min={1}
+            step={1}
+            value={qty}
+            onChange={(e) => setQty(Math.max(1, Math.floor(Number(e.target.value) || 1)))}
+            disabled={busy}
+            style={{ ...field, width: 88, textAlign: 'center', fontSize: 24, fontWeight: 700 }}
+            aria-label="Quantity"
+          />
+          <button onClick={() => setQty(qty + 1)} style={stepperBtn} disabled={busy}>+</button>
         </div>
 
-        <label style={{ display: 'block', fontSize: 14, fontWeight: 600, marginBottom: 6 }}>Total cost (₹)</label>
+        <div style={{ display: 'flex', marginBottom: 8 }}>
+          <button
+            onClick={() => setPriceMode('total')}
+            disabled={busy}
+            style={{ ...priceModeBtn, ...(priceMode === 'total' ? priceModeBtnActive : {}) }}
+          >
+            Total cost
+          </button>
+          <button
+            onClick={() => setPriceMode('perEgg')}
+            disabled={busy}
+            style={{ ...priceModeBtn, ...(priceMode === 'perEgg' ? priceModeBtnActive : {}) }}
+          >
+            Price per egg
+          </button>
+        </div>
+        <label style={{ display: 'block', fontSize: 14, fontWeight: 600, marginBottom: 6 }}>
+          {priceMode === 'total' ? 'Total cost (₹)' : 'Price per egg (₹)'}
+        </label>
         <input
           type="number"
           inputMode="decimal"
           min={0}
           step="0.01"
-          value={cost}
-          onChange={(e) => setCost(e.target.value)}
-          placeholder="e.g. 96"
+          value={priceMode === 'total' ? totalCost : pricePerEgg}
+          onChange={(e) => priceMode === 'total' ? setTotalCost(e.target.value) : setPricePerEgg(e.target.value)}
+          placeholder={priceMode === 'total' ? 'e.g. 96' : 'e.g. 8'}
           disabled={busy}
           style={field}
         />
@@ -91,8 +124,8 @@ export function PurchaseEntry({ store, onBack }: Props) {
 
       <button
         onClick={submit}
-        disabled={busy || qty < 1 || Number.isNaN(parseFloat(cost)) || parseFloat(cost) < 0}
-        style={{ ...s.btn, opacity: busy || qty < 1 || Number.isNaN(parseFloat(cost)) || parseFloat(cost) < 0 ? 0.5 : 1 }}
+        disabled={busy || qty < 1 || Number.isNaN(enteredPrice) || enteredPrice < 0}
+        style={{ ...s.btn, opacity: busy || qty < 1 || Number.isNaN(enteredPrice) || enteredPrice < 0 ? 0.5 : 1 }}
       >
         {busy ? 'Adding…' : `Add ${qty} eggs`}
       </button>
@@ -123,4 +156,21 @@ const field: React.CSSProperties = {
   boxSizing: 'border-box',
   background: theme.bg,
   color: theme.text,
+};
+
+const priceModeBtn: React.CSSProperties = {
+  flex: 1,
+  padding: '9px 8px',
+  border: `1px solid ${theme.border}`,
+  background: theme.bg,
+  color: theme.muted,
+  cursor: 'pointer',
+  fontSize: 14,
+  fontWeight: 600,
+};
+
+const priceModeBtnActive: React.CSSProperties = {
+  background: theme.accentBg,
+  borderColor: theme.accent,
+  color: theme.accent,
 };
